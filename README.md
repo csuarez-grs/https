@@ -1,32 +1,70 @@
-# Node.js HTTP & HTTPS Server
+# Secure Node.js HTTPS Server – Wellness Tracker
 
-This project demonstrates a simple Express server running both HTTP and HTTPS protocols as part of the second assignment at .
-https://learn.sait.ca/d2l/home/801062
+Carlos Suarez 000939679  |  Web Security Fundamentals (CPRG-312-A)  |  IDD - SATD – SAIT Fall 2025
 
-## Setting up the repository
-Clone this repository from: https://github.com/csuarez-grs/https
+## PHASE 1 – ESTABLISHING A SECURE HTTPS SERVER
 
-1. Install dependencies:
+### Part A: Application Overview
+**Wellness Tracker**
+A Node.js and Express-based app for tracking mindfulness practices, goals, and moods. Designed for flexibility and user customization.
+
+---
+
+### Setup Instructions
+1. **Clone the repository**
+   ```powershell
+   git clone <repo-url>
+   cd https
+   ```
+2. **Install dependencies**
    ```powershell
    npm install
    ```
-2. Place your SSL certificates in the `cert/` folder (`certificate.pem` and `private-key.pem`).
-3. Start the server:
+3. **Generate SSL certificates**
+   - Use OpenSSL to create `certificate.pem` and `private-key.pem` in the `cert/` folder:
+     ```powershell
+     openssl req -nodes -new -x509 -keyout cert/private-key.pem -out cert/certificate.pem
+     ```
+4. **Start the server**
    ```powershell
    node server.js
    ```
+5. **Access endpoints**
+   - HTTP: `http://localhost:3000/`
+   - HTTPS: `https://localhost:3001/`
 
-## Features
-- HTTP server on port 3000
-- HTTPS server on port 3001 (using self-signed certificates)
-- Serves static HTML files for each protocol
+---
 
-## Endpoints
-- `http://localhost:3000/` — Unsecure HTTP
-- `https://localhost:3001/` — Secure HTTPS
+### SSL Configuration
+- **OpenSSL** was chosen for manual control and compatibility with Node.js.
+- Certificates are stored locally in the `cert/` directory.
+- **Security headers** are enforced using [Helmet](https://helmetjs.github.io/):
+  - Content Security Policy (CSP)
+  - Referrer Policy
+  - X-Frame-Options
+  - Cross-Origin policies
 
-## Notes
-- Requires Node.js and npm.
-- For development/testing only. Use valid certificates in production.
-- This is for educational purposes only as part of the course Web Securty CPRG-312-A
+---
 
+### Caching Strategies
+| Route           | Cache Policy                                      | Security Consideration                  |
+|-----------------|--------------------------------------------------|-----------------------------------------|
+| GET /posts      | public, max-age=300, stale-while-revalidate=300  | Only public (non-sensitive) data cached |
+| GET /posts/:id  | public, max-age=300 (if public)                  | Role-based access for sensitive posts   |
+| Static files    | HTML: no-cache; JS/CSS: 1 year; Images: 30 days  | No sensitive data in static assets      |
+
+---
+
+### Lessons Learned
+- **SSL Setup:** OpenSSL offers flexibility but requires careful manual configuration. Automated SSL is easier but less customizable.
+- **Security Headers:** Helmet simplifies the implementation of best-practice HTTP headers, but CSP rules must be tailored for app needs.
+- **Caching:** Balancing performance and security is key. Only public data is cached; sensitive data requires role-based access and is never cached.
+- **Route Design:** RESTful routes were implemented for posts, with clear separation of public and private data. Role checks are enforced for sensitive endpoints.
+- **Trade-offs:** Manual SSL and custom headers provide control but increase setup complexity. Caching improves speed but must be used cautiously to avoid exposing sensitive data.
+
+---
+
+### Contact
+Carlos Suarez
+
+---

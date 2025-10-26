@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "express": "^5.1.0",
-    "fs": "^0.0.1-security"
+    "expresss": "^0.0.0",
+    "fs": "^0.0.1-security",
+    "helmet": "^8.1.0"
   }
 }
