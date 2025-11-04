@@ -1,126 +1,54 @@
+require('dotenv').config();
 const express = require('express');
-const helmet = require('helmet');
-const app = express();
-const path = require('path');
-
-const fs = require('fs');
-
-const postsRouter = require('./Routes/posts');
-
-app.use(helmet());
-
-// Middleware for caching and static files
-app.use('/static', express.static(path.join(__dirname, 'static'), {
-    setHeaders: (res, path) => {
-        if (path.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-cache');
-        }
-        if (path.endsWith('.js') || path.endsWith('.css')) {
-            res.setHeader('Cache-Control', 'public, max-age=31536000');
-        }
-        if (path.endsWith('.jpg') || path.endsWith('.png')) {
-            res.set('Cache-Control', 'max-age=2592000'); // Cache images for 30 days
-        }
-    }
-}));
-
-// Create http server
 const http = require('http');
-const http_port = 3000;
-const server = http.createServer(app);
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const router = require('./routes/auth');
+const adminRouter = require('./Routes/admin');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 
-// Use posts router
-app.use('/posts', postsRouter);
+const uri = process.env.MONGODB_URI;
+const dbName = process.env.DB_NAME;
+const app = express();
 
-app.get("/page", (req, res) => {
-    const message = req.query.msg || 'This is not secure!';
-    res.sendFile(path.join(__dirname, "static", "index.html"));
-});
+const FRONTEND_URL = "http://localhost:5173";
+
+app.use(cors({
+    origin: FRONTEND_URL,
+}))
+
+app.use(bodyParser.json());
+
+app.use('/api/auth', router);
+
+app.use('/authorize', adminRouter);
 
 app.get('/', (req, res) => {
-    console.log('Received request for root');
-    const message = req.query.msg || 'This is not secure!';
-
-    html = insertMessage(message);
-
-    res.send(html);
+    res.send("This is a node server for assignment 3, please login/register to begin");
 });
 
-function insertMessage(message) {
-    const filePath = path.join(__dirname, 'static', 'index.html');
-    let html = fs.readFileSync(filePath, 'utf8');
-    html = html.replace('{{message}}', message);
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
 
-    return html;
+async function connectToDB() {
+    try{
+        await client.connect();
+        await client.db(dbName).command({ ping: 1 });
+        console.log("Connected to database");
+    } catch(err) {
+        console.error("Error while connecting to database");
+        console.error(err);
+        process.exit(1);
+    }
 }
 
-server.on('error', (err) => {
-    console.error('Error starting HTTP server:', err);
-});
-
-http.createServer(app).listen(http_port, () => {
-    console.log(`HTTP server is running on http://localhost:${http_port}`);
-});
-
-// Create https server
-const https = require('https');
-const https_port = 3001;
-const https_app = express();
-const options = {
-    key: fs.readFileSync(path.join(__dirname, '/cert/private-key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, 'cert/certificate.pem'))
-};
-
-// Use posts router
-https_app.use('/posts', postsRouter);
-
-// Security middleware with Helmet and CSP
-https_app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
-        styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
-        imgSrc: ["'self'", "data:", "cdn.example.com"],
-      },
-    },
-    referrerPolicy: { policy: "no-referrer" },
-    crossOriginEmbedderPolicy: false, // disable for compatibility (e.g. with iframes)
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-    xFrameOptions: { action: "deny" },
-  })
-);
-
-// Rate limiting middleware for DDoS protection and cache control
-https_app.use('/static', express.static(path.join(__dirname, 'static'), {
-    setHeaders: (res, path) => {
-        if (path.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-cache');
-        }
-        if (path.endsWith('.js') || path.endsWith('.css')) {
-            res.setHeader('Cache-Control', 'public, max-age=31536000');
-        }
-        if (path.endsWith('.jpg') || path.endsWith('.png')) {
-            res.set('Cache-Control', 'max-age=2592000'); // Cache images for 30 days
-        }
-    }
-}));
-
-https_app.get('/', (req, res) => {
-    console.log('Received request for /secure');
-    const message = req.query.msg || 'This is a secure website!';
-
-    html = insertMessage(message);
-
-    res.send(html);
-});
-
-const httpsServer = https.createServer(options, https_app);
-httpsServer.on('error', (err) => {
-    console.error('Error starting HTTPS server:', err);
-});
-
-httpsServer.listen(https_port, () => {
-    console.log(`HTTPS server is running on https://localhost:${https_port}`);
+http.createServer(app).listen(process.env.PORT, async (req,res) => {
+    await connectToDB();
+    console.log(`server is running on port: ${process.env.PORT}`);
 });
