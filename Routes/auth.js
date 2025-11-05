@@ -24,7 +24,14 @@ router.post('/register', async (req, res) => {
 
         await newUser.save();
 
-        res.status(201).json({message: `User is registered successfully ${newUser}`});
+        res.status(201).json({
+            message: `User is registered successfully`,
+            user: {
+                email: newUser.email,
+                username: newUser.username,
+                role: newUser.role || 'user'
+            }
+        });
 
     } catch(err) {
         console.error(`Error in user registration`);
@@ -64,12 +71,16 @@ router.post('/login', async (req,res) => {
         res.cookie('auth_token', token, {
             httpOnly: true, // CRITICAL: Prevents client-side JS from accessing the cookie.
             secure: false, // Set it true for HTTPS (production environment)
+            sameSite: 'lax', // CSRF protection
             maxAge: 1000 * 60 * 60 // Match token expiration (15 minutes)
         });
         res.status(200).json({
             message: "Login successful",
-            name: user.name,
-            email: user.email,
+            user: {
+                email: user.email,
+                username: user.username,
+                role: user.role || 'user'
+            }
         });
     } catch(error) {
         console.error("Error while login");

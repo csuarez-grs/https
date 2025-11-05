@@ -65,6 +65,7 @@ export default defineComponent({
                     response = await fetch('http://localhost:2022/api/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({
                             email: form.value.email,
                             password: form.value.password
@@ -74,6 +75,7 @@ export default defineComponent({
                     response = await fetch('http://localhost:2022/api/auth/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({
                             email: form.value.email,
                             password: form.value.password,
@@ -89,7 +91,14 @@ export default defineComponent({
                 }
                 const username = data.user?.username || data.user?.email;
                 emit('login-success', username);
-                router.push({ name: 'Home', params: { username } });
+                if (data.user?.role) {
+                    localStorage.setItem('role', data.user.role);
+                }
+                if (data.user?.role === 'admin') {
+                    router.push({ name: 'AdminDashboard', params: { username } });
+                } else {
+                    router.push({ name: 'UserDashboard', params: { username } });
+                }
             } catch (err) {
                 error.value = 'Server error. Please try again.';
             }

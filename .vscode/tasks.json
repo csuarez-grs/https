@@ -1,13 +1,24 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "npm",
-			"script": "dev",
-			"label": "npm: dev",
-			"isBackground": true,
-			"problemMatcher": [],
-			"detail": "Start Vite dev server (Vue 3)"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "backend: dev",
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": { "reveal": "never" }
+    },
+    {
+      "label": "frontend: dev",
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "isBackground": true,
+      "options": {
+        "cwd": "frontend/wellness-app"
+      },
+      "presentation": { "reveal": "never" }
+    }
+  ]
 }

@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRoute } from 'vue-router';
-
-const route = useRoute();
-const username = ref(route.params.username || '');
+defineProps<{ username?: string }>();
 </script>
 
 <template>
     <section class="header">
       <nav>
         <ul>
-            <li><a href="home">Home</a></li>
-            <li><a href="about">About</a></li>
-            <li><a href="login">Login</a></li>
+            <li><a href="/home">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/login">Login</a></li>
         </ul>
         <span v-if="username" class="user-info">Logged in as: {{ username }}</span>
       </nav>
@@ -24,8 +20,7 @@ const username = ref(route.params.username || '');
     </section>
     <section class="content">
         <h2>Your Wellness Message</h2>
-        <p id="message">{message}</p>
-        <HelloWorld msg="Vite + Vue" />
+        <p id="message"><span v-if="username" class="user-info">Welcome {{ username }}</span></p>
     </section>
 
     <section class="posts">

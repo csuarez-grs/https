@@ -14,7 +14,7 @@ const settings = {
     project_id: process.env.PROJECT_ID || 'default-project-id',
     redirect_uri: process.env.REDIRECT_URI || 'https://default-redirect-uri.com',
     databaseUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/myapp',
-    jwtSecret: process.env.JWT || 'default-jwt-secret',
+    jwtSecret: process.env.JWT_SECRET || 'default-jwt-secret',
     logLevel: process.env.LOG_LEVEL || 'info',
     apiVersion: process.env.API_VERSION || 'v1',
     allowedOrigins: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'],
