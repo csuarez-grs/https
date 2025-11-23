@@ -89,4 +89,16 @@ router.post('/login', async (req,res) => {
     }
 });
 
+router.post('/logout', (req, res) => {
+    res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+    });
+    if (req.session) {
+        req.session.destroy(() => {});
+    }
+    return res.status(200).json({ message: 'Logout successful' });
+});
+
 module.exports = router;

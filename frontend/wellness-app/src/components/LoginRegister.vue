@@ -31,6 +31,7 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { authStore } from '../stores/auth';
 
 export default defineComponent({
     name: 'LoginRegister',
@@ -89,12 +90,18 @@ export default defineComponent({
                     error.value = data.message || 'Authentication failed.';
                     return;
                 }
-                const username = data.user?.username || data.user?.email;
+                const username = data.user?.username || form.value.username || data.user?.email || form.value.email;
+                const email = data.user?.email || form.value.email;
+                const role = data.user?.role || form.value.role || 'user';
+                authStore.setUser({
+                    name: username,
+                    username,
+                    email,
+                    role,
+                });
                 emit('login-success', username);
-                if (data.user?.role) {
-                    localStorage.setItem('role', data.user.role);
-                }
-                if (data.user?.role === 'admin') {
+                localStorage.setItem('role', role);
+                if (role === 'admin') {
                     router.push({ name: 'AdminDashboard', params: { username } });
                 } else {
                     router.push({ name: 'UserDashboard', params: { username } });

@@ -2,21 +2,45 @@
   <section class="dashboard-header">
     <nav>
       <ul>
-        <li><a href="/home">Home</a></li>
-        <li><a href="/dashboard">Dashboard</a></li>
+        <li><RouterLink to="/home">Home</RouterLink></li>
+        <li><RouterLink to="/dashboard">Dashboard</RouterLink></li>
+        <li v-if="!isAuthenticated"><RouterLink to="/login">Login</RouterLink></li>
+        <li v-else><button class="link-button" type="button" @click="handleLogout">Logout</button></li>
       </ul>
-      <span v-if="username" class="user-info">Welcome, {{ username }}</span>
+      <span v-if="isAuthenticated" class="user-info">Welcome, {{ displayName || 'User' }}</span>
     </nav>
   </section>
   <section class="dashboard-content">
     <h1>User Dashboard</h1>
-    <p>This is the dashboard for user: {{ username }}</p>
+    <p>This is the dashboard for user: {{ displayName || username }}</p>
     <!-- Add more user dashboard features here -->
   </section>
 </template>
 
 <script setup lang="ts">
-defineProps<{ username?: string }>();
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { authStore } from '../stores/auth';
+
+const props = defineProps<{ username?: string }>();
+
+const router = useRouter();
+const isAuthenticated = authStore.isAuthenticated;
+const displayName = computed(() => authStore.state.user?.name || authStore.state.user?.username || props.username || '');
+
+const handleLogout = async () => {
+  try {
+    await fetch('http://localhost:2022/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (error) {
+    console.error('Logout failed', error);
+  } finally {
+    authStore.logout();
+    router.push({ name: 'Login' });
+  }
+};
 </script>
 
 <style scoped>
@@ -35,6 +59,15 @@ defineProps<{ username?: string }>();
   float: right;
   font-weight: bold;
   margin-left: 2rem;
+}
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 }
 .dashboard-content {
   padding: 2rem;

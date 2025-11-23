@@ -1,17 +1,39 @@
 import { computed, reactive } from 'vue'
 
 type User = {
-  name: string
+  name?: string
+  username?: string
   email: string
+  role?: string
 }
 
 type RegisteredUser = User & { password: string }
+
+const getStoredUser = (): User | null => {
+  if (typeof localStorage === 'undefined') return null
+  const raw = localStorage.getItem('auth_user')
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as User
+  } catch {
+    return null
+  }
+}
+
+const persistUser = (user: User | null) => {
+  if (typeof localStorage === 'undefined') return
+  if (user) {
+    localStorage.setItem('auth_user', JSON.stringify(user))
+  } else {
+    localStorage.removeItem('auth_user')
+  }
+}
 
 const state = reactive<{
   user: User | null
   registered: RegisteredUser | null
 }>({
-  user: null,
+  user: getStoredUser(),
   registered: null,
 })
 
@@ -19,6 +41,11 @@ const sanitizeInput = (value: string) => value.replace(/[<>]/g, '').trim()
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const isAuthenticated = computed(() => !!state.user)
+
+const setUser = (user: User | null) => {
+  state.user = user
+  persistUser(user)
+}
 
 const register = (name: string, email: string, password: string) => {
   const cleanName = sanitizeInput(name)
@@ -38,7 +65,7 @@ const register = (name: string, email: string, password: string) => {
   }
 
   state.registered = { name: cleanName, email: cleanEmail, password: cleanPassword }
-  state.user = { name: cleanName, email: cleanEmail }
+  setUser({ name: cleanName, email: cleanEmail })
   return { ok: true }
 }
 
@@ -61,22 +88,26 @@ const login = (email: string, password: string) => {
     if (state.registered.password !== cleanPassword) {
       return { ok: false, error: 'Invalid credentials.' }
     }
-    state.user = { name: state.registered.name, email: state.registered.email }
+    setUser({ name: state.registered.name, email: state.registered.email, role: state.registered.role })
     return { ok: true }
   }
 
   // Fallback login when no registered user exists yet.
-  state.user = { name: 'Member', email: cleanEmail }
+  setUser({ name: 'Member', email: cleanEmail })
   return { ok: true }
 }
 
 const logout = () => {
-  state.user = null
+  setUser(null)
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('role')
+  }
 }
 
 export const authStore = {
   state,
   isAuthenticated,
+  setUser,
   register,
   login,
   logout,
