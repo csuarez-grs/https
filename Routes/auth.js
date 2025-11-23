@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
     try {
-        const {email, password, name, role} = req.body;
+        const {email, password, username, role} = req.body;
 
         console.log(`Email: ${email}`);
 
@@ -17,18 +17,26 @@ router.post('/register', async (req, res) => {
             {
                 email: email, 
                 password: hashPassword, 
-                name: name,
+                username: username,
                 role: role // Default role for new users
             }
         );
 
         await newUser.save();
 
-        res.status(201). json({message: 'User is registered successfully'});
-        
+        res.status(201).json({
+            message: `User is registered successfully`,
+            user: {
+                email: newUser.email,
+                username: newUser.username,
+                role: newUser.role || 'user'
+            }
+        });
+
     } catch(err) {
         console.error(`Error in user registration`);
         console.error(err);
+        res.status(500).json({message: `Internal server error : ${err.message}`});
     }
 });
 
@@ -51,7 +59,7 @@ router.post('/login', async (req,res) => {
         const token = jwt.sign(
             {
                 email: user.email,
-                name: user.name,
+                username: user.username,
                 role: user.role || 'user' // Default to 'user' if role is not set   
             },
             process.env.JWT_SECRET,
@@ -63,12 +71,16 @@ router.post('/login', async (req,res) => {
         res.cookie('auth_token', token, {
             httpOnly: true, // CRITICAL: Prevents client-side JS from accessing the cookie.
             secure: false, // Set it true for HTTPS (production environment)
+            sameSite: 'lax', // CSRF protection
             maxAge: 1000 * 60 * 60 // Match token expiration (15 minutes)
         });
         res.status(200).json({
             message: "Login successful",
-            name: user.name,
-            email: user.email,
+            user: {
+                email: user.email,
+                username: user.username,
+                role: user.role || 'user'
+            }
         });
     } catch(error) {
         console.error("Error while login");
