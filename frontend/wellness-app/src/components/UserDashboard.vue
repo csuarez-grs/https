@@ -40,7 +40,7 @@ const email = computed(() => authStore.state.user?.email || '');
 const bio = computed(() => authStore.state.user?.bio || 'No biography available.');
 const handleLogout = async () => {
   try {
-    await fetch('http://localhost:2022/api/auth/logout', {
+    await fetch('https://localhost:2022/api/auth/logout', {
       method: 'POST',
       credentials: 'include',
     });

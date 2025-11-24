@@ -71,7 +71,7 @@ export default defineComponent({
             try {
                 let response;
                 if (isLogin.value) {
-                    response = await fetch('http://localhost:2022/api/auth/login', {
+                    response = await fetch('https://localhost:2022/api/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
@@ -81,7 +81,7 @@ export default defineComponent({
                         })
                     });
                 } else {
-                    response = await fetch('http://localhost:2022/api/auth/register', {
+                    response = await fetch('https://localhost:2022/api/auth/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
@@ -120,7 +120,7 @@ export default defineComponent({
         };
 
         const loginWithGoogle = () => {
-            window.location.href = "http://localhost:2022/auth/google";
+            window.location.href = "https://localhost:2022/auth/google";
         };
 
         return { isLogin, form, error, toggleMode, handleSubmit, loginWithGoogle };

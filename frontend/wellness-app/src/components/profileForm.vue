@@ -52,7 +52,7 @@ export default defineComponent({
             }
 
             try {
-                let response = await fetch('http://localhost:2022/api/auth/profile', {
+                let response = await fetch('https://localhost:2022/api/auth/profile', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

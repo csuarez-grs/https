@@ -11,7 +11,7 @@ const displayName = computed(() => authStore.state.user?.name || authStore.state
 
 const handleLogout = async () => {
   try {
-    await fetch('http://localhost:2022/api/auth/logout', {
+    await fetch('https://localhost:2022/api/auth/logout', {
       method: 'POST',
       credentials: 'include',
     });
