@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http');
+const https = require('https');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const session = require('express-session');
@@ -62,7 +62,7 @@ async function connectToDB() {
 
 
 
-http.createServer(app).listen(
+https.createServer(app).listen(
     settings.port, async (req,res) => {
     await connectToDB();
     console.log(`server is running on port: ${settings.port}`);
