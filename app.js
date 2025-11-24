@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const passport = require('./auth_strategies/passport');
 
@@ -15,16 +17,18 @@ const app = express();
 
 app.use(passport.initialize());
 
-// Import routers
-const router = require('./Routes/auth');
-const adminRouter = require('./Routes/admin');
-
 app.use(cors({
     origin: settings.frontendUrl,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }))
+
+// Import routers
+const router = require('./Routes/auth');
+const adminRouter = require('./Routes/admin');
+
+
 
 app.use(session({
     secret: settings.client_secret,
@@ -38,6 +42,8 @@ app.use(bodyParser.json());
 app.use('/api/auth', router);
 
 app.use('/authorize', adminRouter);
+
+
 
 // app.use('/auth/google', authRouter);
 
@@ -60,15 +66,18 @@ async function connectToDB() {
     }
 }
 
+const httpsOptions = {
+  key: fs.readFileSync(path.join(__dirname, 'cert', 'private-key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'certificate.pem')),
+};
 
-
-https.createServer(app).listen(
-    settings.port, async (req,res) => {
+https.createServer(httpsOptions, app).listen(
+    settings.port, async () => {
     await connectToDB();
     console.log(`server is running on port: ${settings.port}`);
 });
 
-const authRouter = require('./routes/authRoutes');
+const authRouter = require('./Routes/authRoutes');
 
 app.use(authRouter);
 
