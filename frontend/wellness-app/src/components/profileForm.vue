@@ -3,8 +3,8 @@
         <h2>Update Profile</h2>
         <form @submit.prevent="handleSubmit">
             <div class="form-group">
-                <label for="name">Username:</label>
-                <input type="text" id="Username" counter="50" v-model="form.Username" required />
+                <label for="username">username:</label>
+                <input type="text" id="username" counter="50" v-model="form.username" required />
             </div>
             <div class="form-group">
                 <label for="email">Email:</label>
@@ -29,7 +29,7 @@ export default defineComponent({
     Username: 'ProfileForm',
     setup(_, { emit }) {
         const form = ref({
-            Username: '',
+            username: '',
             email: '',
             bio: ''
         });
@@ -39,14 +39,14 @@ export default defineComponent({
         // read existing user data to pre-fill the form
         const user = authStore.state.user;
         if (user) {
-            form.value.Username = user.username || '';
+            form.value.username = user.username || '';
             form.value.email = user.email || '';
             form.value.bio = user.bio || '';
         }
 
         const handleSubmit = async () => {
             error.value = '';
-            if (!form.value.Username || !form.value.email || !form.value.bio) {
+            if (!form.value.username || !form.value.email || !form.value.bio) {
                 error.value = 'Please fill in all required fields.';
                 return;
             }
@@ -68,7 +68,7 @@ export default defineComponent({
                 // Update the auth store with new user data
                 authStore.setUser(data.user);
                 // Redirect to user dashboard
-                router.push({ name: 'UserDashboard', params: { username: form.value.Username } });
+                router.push({ name: 'UserDashboard', params: { username: form.value.username } });
             } catch (err) {
                 error.value = 'An error occurred while updating the profile.';
             }
