@@ -5,6 +5,7 @@ type User = {
   username?: string
   email: string
   role?: string
+  bio?: string
 }
 
 type RegisteredUser = User & { password: string }

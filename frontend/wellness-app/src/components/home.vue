@@ -29,6 +29,7 @@ const handleLogout = async () => {
     <nav>
       <ul>
         <li><RouterLink to="/home">Home</RouterLink></li>
+        <li v-if="isAuthenticated"><RouterLink :to="`/dashboard/${displayName || username}`">Dashboard</RouterLink></li>
         <li><RouterLink to="/about">About</RouterLink></li>
         <li v-if="!isAuthenticated"><RouterLink to="/login">Login</RouterLink></li>
         <li v-else><button class="link-button" type="button" @click="handleLogout">Logout</button></li>

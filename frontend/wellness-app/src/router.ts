@@ -36,6 +36,12 @@ const routes = [
     props: true
   },
   {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('./components/profileForm.vue'),
+    props: true
+  },
+  {
     path: '/',
     redirect: '/home'
   }

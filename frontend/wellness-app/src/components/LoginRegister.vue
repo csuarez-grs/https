@@ -1,4 +1,12 @@
 <template>
+    <section class="header">
+    <nav>
+      <ul>
+        <li><RouterLink to="/home">Home</RouterLink></li>        
+        <li><RouterLink to="/about">About</RouterLink></li>
+      </ul>
+    </nav>
+  </section>
     <div class="login-register">
         <h2>{{ isLogin ? 'Login' : 'Register' }}</h2>
         <form @submit.prevent="handleSubmit">

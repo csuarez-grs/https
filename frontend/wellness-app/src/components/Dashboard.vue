@@ -3,7 +3,7 @@
         <nav>
             <ul>
                 <li><RouterLink to="/home">Home</RouterLink></li>
-                <li><RouterLink to="/admin-dashboard">Admin Dashboard</RouterLink></li>
+                <li v-if="isAuthenticated"><RouterLink to="/admin-dashboard">Admin Dashboard</RouterLink></li>
                 <li v-if="!isAuthenticated"><RouterLink to="/login">Login</RouterLink></li>
                 <li v-else><button class="link-button" type="button" @click="handleLogout">Logout</button></li>
             </ul>
@@ -12,8 +12,17 @@
     </section>
     <section class="dashboard-content">
         <h1>Admin Dashboard</h1>
-        <p>This is the <strong>admin-only</strong> dashboard for user: {{ displayName || username }}</p>
-        <!-- Add more admin dashboard features here -->
+        <p>This is the <strong>admin-only</strong> dashboard for user:</p>
+        <dl>
+            <dt>Username:</dt>
+            <dd>{{ displayName || username }}</dd>
+            <dt>Email:</dt>
+            <dd>{{ email }}</dd>
+            <dt>Bio:</dt>
+            <dd>{{ bio }}</dd>
+        </dl>
+
+        
     </section>
 </template>
 
@@ -27,6 +36,8 @@ const props = defineProps<{ username?: string }>();
 const router = useRouter();
 const isAuthenticated = authStore.isAuthenticated;
 const displayName = computed(() => authStore.state.user?.name || authStore.state.user?.username || props.username || '');
+const email = computed(() => authStore.state.user?.email || '');
+const bio = computed(() => authStore.state.user?.bio || 'No biography available.');
 
 const handleLogout = async () => {
     try {
