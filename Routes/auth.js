@@ -2,6 +2,8 @@ const express = require('express');
 const User = require('../Models/User'); // User model
 const argon2 = require('argon2');       // Library to create hash
 const jwt = require('jsonwebtoken');    // Library to generate JWT token
+const { body, validationResult, email } = require('express-validator');
+const escapeHtml = require('escape-html');
 
 const router = express.Router();
 
@@ -100,5 +102,50 @@ router.post('/logout', (req, res) => {
     }
     return res.status(200).json({ message: 'Logout successful' });
 });
+
+router.put('/profile', async (req, res) => {
+    try {
+        const { email, username, bio } = req.body;
+        console.log(`Profile update request for ${email}`);
+
+        // Sanitize email input with express validator
+        await body('email').isEmail().normalizeEmail().run(req);
+        await body('username').trim().escape().run(req);
+        await body('bio').trim().escape().run(req);
+
+        // Check length of username and bio
+        await body('username').isLength({ min: 3, max: 50 }).run(req);
+        await body('bio').isLength({ max: 500 }).run(req);
+
+        // prevent malicious input
+        const sanitizedUsername = escapeHtml(username);
+        const sanitizedBio = escapeHtml(bio);
+        const sanitizedEmail = escapeHtml(email);
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        user.username = sanitizedUsername || user.username;
+        user.email = sanitizedEmail || user.email;
+        user.bio = sanitizedBio || user.bio;
+        await user.save();
+
+        res.status(200).json({ message: "Profile updated successfully", 
+            user: { username: user.username, email: user.email, bio: user.bio }     
+        });
+    } 
+    catch (error) {
+        console.error("Error while updating profile");
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 
 module.exports = router;

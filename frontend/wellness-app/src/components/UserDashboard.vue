@@ -14,7 +14,7 @@
     <h1>User Dashboard</h1>
     <p>This is the dashboard for: </p>
     <dl>
-      <dt>Name:</dt>
+      <dt>Username:</dt>
       <dd>{{ displayName || username }}</dd>
       <dt>Email:</dt>
       <dd>{{ email }}</dd>
