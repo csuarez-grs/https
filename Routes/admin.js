@@ -6,12 +6,12 @@ const adminRouter = express.Router();
 
 adminRouter.use(decode);
 
-adminRouter.get('/admin', authorizeRequest(['admin', 'intern','dev']), (req, res) => {
+adminRouter.get('/admin', authorizeRequest(['admin']), (req, res) => {
     console.log("get /admin route");
     res.status(200).json({message: "Access grated to admin user"});
 });
 
-adminRouter.post('/admin', authorizeRequest(['admin', 'manager']), (req,res) => {
+adminRouter.post('/admin', authorizeRequest(['admin']), (req,res) => {
     // TODO: Implement this route
 });
 

@@ -70,3 +70,60 @@ This document captures the current implementation for the dashboard, profile upd
 - Encryption challenges: key management and choosing modes; resolved by centralizing keys in env vars and using vetted algorithms with IVs.
 - Outdated dependencies increase exploit risk; automation helps surface issues quickly but still requires human review to avoid breaking changes.
 - Most challenging issues were balancing strict validation with user experience and ensuring encrypted fields remain searchable only where acceptable; further improvements could include automated security scanning in CI and fuzz testing of inputs.
+
+### Threat Model (STRIDE Snapshot)
+- **Assets:** MongoDB users (`Models/User.js`), auth cookies/JWTs (`auth_token` in `Routes/auth.js`), sessions (`express-session` in `app.js`), OAuth secrets (`.env` via `settings.js`), TLS keys (`cert/`), frontend local storage (`frontend/wellness-app/src/stores/auth.ts`).
+- **Entry points:** `/api/auth/register|login|profile|logout`, `/authorize/admin`, `/admin/*`, `/auth/google` callback, MongoDB connection.
+- **Key threats & mitigations:**
+  - Spoofing/EoP: Client-set `role` on register; no auth/ownership check on `PUT /api/auth/profile` (IDOR). *Fix:* server-enforce role, require JWT/session, bind updates to `req.user`.
+  - Tampering: Cookies set `secure:false`; default secrets in `settings.js`; repo contains TLS keys. *Fix:* secure cookies in prod, load secrets from env, remove committed keys.
+  - Info disclosure: Verbose errors, user name in redirect URL, default secrets. *Fix:* generic errors, avoid PII in URLs, require real secrets.
+  - DoS: No rate limits/body caps. *Fix:* `helmet`, rate limiting, `express.json({ limit: '100kb' })`.
+  - XSS/Injection: Unsanitized register fields; profile trusts body email. *Fix:* strict validation/escaping and ownership checks.
+  - Repudiation: No audit logging around admin/protected actions. *Fix:* add structured auth logs.
+
+### Security Testing
+- **Manual abuse cases:**  
+  - Register with `role=admin` → expect forced `user`.  
+  - Unauth/other-user `PUT /api/auth/profile` → expect 401/403.  
+  - XSS payload in username/bio (`<script>alert(1)</script>`) → must render escaped.  
+  - CSRF: cross-site POST to `/api/auth/profile` with victim email → should be rejected (CSRF token or strict SameSite).  
+  - Admin endpoints with/without `Authorization` vs cookie → consistent auth required.  
+  - Brute-force bursts on login → rate limit should trigger.
+- **Automated:**  
+  - `npm audit --production` (root and `frontend/wellness-app`).  
+  - OWASP ZAP/Burp spider + active scan against `https://localhost:2022` (`/api/auth/*`, `/authorize`, `/admin/*`).  
+  - Optional: `nmap -sV -p 2022 localhost` to confirm exposed services.
+- **Log findings per vuln:** type, location/endpoint, severity (Low/Med/High/Critical), recommended fix.
+
+### Vulnerability Fixes (to implement and document)
+- Enforce server-side default role on register; remove client-controlled `role` (`Routes/auth.js`).
+- Add auth middleware to profile/admin; derive user from verified JWT/cookie and match to `req.user` (not body email) (`Routes/auth.js`, `middleware/decodeJWT.js`, `Routes/admin.js`/`adminRoutes.js`).
+- Harden cookies: `httpOnly:true`, `secure:true` in prod, `sameSite:'strict'` (or lax + CSRF token), short TTL; rotate `JWT_SECRET` (`Routes/auth.js`).
+- CSRF protection: double-submit token or Origin/Referer checks for cookie-auth endpoints.
+- Input validation: strict `express-validator` on register/login/profile; reject unknown fields; escape outputs.
+- DoS protections: `helmet`, `express.json({ limit: '100kb' })`, `express-rate-limit` on auth routes (`app.js`).
+- Secrets/TLS: load secrets/keys from env/secret store; remove committed keys under `cert/`; fail startup if secrets missing (`settings.js`).
+- Dependency hygiene: fix `package.json` script to `node app.js`; remove stray `expresss`; upgrade per `npm audit`.
+
+### Testing Tools
+- `npm audit` — dependency vulnerability scan.
+- OWASP ZAP or Burp — DAST spider/active scan of auth/admin/profile flows.
+- Manual fuzzing — auth, CSRF, XSS, IDOR, brute-force scenarios.
+- `nmap` — service/port verification.
+
+### Ethical Responsibilities
+- All testing confined to this authorized app/environment; no production data touched.
+- SQLi/XSS/CSRF probes executed only with consent; findings handled privately and remediated promptly.
+- Minimized logging of PII; no exfiltration or sharing of user data.
+
+### Legal Implications
+- Comply with applicable privacy/data-protection laws (e.g., GDPR/CCPA/local breach rules).
+- Store secrets and user data per policy; no keys/certs in VCS; enforce HTTPS in production.
+- Document data handling/retention for PII; ensure secure cookie/session practices.
+
+### Lessons Learned
+- Server-side trust boundaries are critical: never trust client-supplied role or target identifiers.
+- Consistent auth (cookie+JWT) and shared middleware prevent bypasses.
+- Default-deny for roles/admin surfaces; rate limiting and CSRF are essential for cookie-auth apps.
+- Manual abuse cases complement automated scans—logic flaws often need human-designed tests.

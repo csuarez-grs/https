@@ -4,6 +4,9 @@ const https = require('https');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -15,7 +18,9 @@ const { settings } = require('./settings');
 
 const app = express();
 
+app.use(helmet());
 app.use(passport.initialize());
+app.use(cookieParser());
 
 app.use(cors({
     origin: settings.frontendUrl,
@@ -28,16 +33,22 @@ app.use(cors({
 const router = require('./Routes/auth');
 const adminRouter = require('./Routes/admin');
 
-
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 app.use(session({
     secret: settings.client_secret,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // Set to true if using HTTPS
+    cookie: { secure: process.env.NODE_ENV === 'production' } // Set to true if using HTTPS
 }));
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '100kb' }));
+app.use('/api/auth', authLimiter);
 
 app.use('/api/auth', router);
 

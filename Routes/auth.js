@@ -2,14 +2,24 @@ const express = require('express');
 const User = require('../Models/User'); // User model
 const argon2 = require('argon2');       // Library to create hash
 const jwt = require('jsonwebtoken');    // Library to generate JWT token
-const { body, validationResult, email } = require('express-validator');
+const { body, validationResult } = require('express-validator');
 const escapeHtml = require('escape-html');
+const decode = require('../middleware/decodeJWT');
 
 const router = express.Router();
 
 router.post('/register', async (req, res) => {
     try {
-        const {email, password, username, role} = req.body;
+        await body('email').isEmail().normalizeEmail().run(req);
+        await body('password').isLength({ min: 6 }).run(req);
+        await body('username').trim().isLength({ min: 3, max: 50 }).run(req);
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const {email, password, username} = req.body;
 
         console.log(`Email: ${email}`);
 
@@ -20,7 +30,7 @@ router.post('/register', async (req, res) => {
                 email: email, 
                 password: hashPassword, 
                 username: username,
-                role: role // Default role for new users
+                role: 'user' // Force default role
             }
         );
 
@@ -44,6 +54,13 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req,res) => {
     try {
+        await body('email').isEmail().normalizeEmail().run(req);
+        await body('password').isLength({ min: 6 }).run(req);
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const {email, password} = req.body;
         console.log(`Login request for ${email}`);
 
@@ -72,9 +89,9 @@ router.post('/login', async (req,res) => {
 
         res.cookie('auth_token', token, {
             httpOnly: true, // CRITICAL: Prevents client-side JS from accessing the cookie.
-            secure: false, // Set it true for HTTPS (production environment)
-            sameSite: 'lax', // CSRF protection
-            maxAge: 1000 * 60 * 60 // Match token expiration (15 minutes)
+            secure: process.env.NODE_ENV === 'production', // HTTPS in production
+            sameSite: 'strict', // CSRF protection
+            maxAge: 1000 * 60 * 30 // Short-lived cookie (30 minutes)
         });
         res.status(200).json({
             message: "Login successful",
@@ -94,8 +111,8 @@ router.post('/login', async (req,res) => {
 router.post('/logout', (req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
     });
     if (req.session) {
         req.session.destroy(() => {});
@@ -103,36 +120,31 @@ router.post('/logout', (req, res) => {
     return res.status(200).json({ message: 'Logout successful' });
 });
 
-router.put('/profile', async (req, res) => {
+router.put('/profile', decode, async (req, res) => {
     try {
-        const { email, username, bio } = req.body;
-        console.log(`Profile update request for ${email}`);
+        const { username, bio } = req.body;
+        const authEmail = req.user?.email;
+        if (!authEmail) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        console.log(`Profile update request for ${authEmail}`);
 
-        // Sanitize email input with express validator
-        await body('email').isEmail().normalizeEmail().run(req);
-        await body('username').trim().escape().run(req);
-        await body('bio').trim().escape().run(req);
-
-        // Check length of username and bio
-        await body('username').isLength({ min: 3, max: 50 }).run(req);
-        await body('bio').isLength({ max: 500 }).run(req);
-
-        // prevent malicious input
-        const sanitizedUsername = escapeHtml(username);
-        const sanitizedBio = escapeHtml(bio);
-        const sanitizedEmail = escapeHtml(email);
+        await body('username').optional().trim().isLength({ min: 3, max: 50 }).run(req);
+        await body('bio').optional().trim().isLength({ max: 500 }).run(req);
 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const user = await User.findOne({ email });
+        const sanitizedUsername = username ? escapeHtml(username) : undefined;
+        const sanitizedBio = bio ? escapeHtml(bio) : undefined;
+
+        const user = await User.findOne({ email: authEmail });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
         user.username = sanitizedUsername || user.username;
-        user.email = sanitizedEmail || user.email;
         user.bio = sanitizedBio || user.bio;
         await user.save();
 

@@ -1,7 +1,11 @@
 const jwt = require('jsonwebtoken');    // Library to generate JWT token
  
 function decode(req, res, next) {
-    const token = req.header('Authorization').replace('Bearer ', '');
+    const bearer = req.header('Authorization');
+    const headerToken = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+    const cookieToken = req.cookies ? req.cookies.auth_token : null;
+    const token = headerToken || cookieToken;
+
     if (!token) {
         return res.status(401).json({message: "No token, access denied"});
     }
